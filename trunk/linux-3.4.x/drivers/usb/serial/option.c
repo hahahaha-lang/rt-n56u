@@ -2140,6 +2140,7 @@ static struct usb_serial_driver option_1port_device = {
 #ifdef CONFIG_PM
 	.suspend           = usb_wwan_suspend,
 	.resume            = usb_wwan_resume,
+	.reset_resume      = usb_wwan_resume,
 #endif
 };
 
@@ -2339,27 +2340,6 @@ static int option_send_setup(struct usb_serial_port *port)
 	return res;
 }
 
-static struct urb *option_setup_urb(struct usb_serial *serial, int endpoint,
-int dir, void *ctx, char *buf, int len,
-void (*callback)(struct urb *))
-{
-......
-/* Fill URB using supplied data. */
-usb_fill_bulk_urb(urb, serial->dev,
-      usb_sndbulkpipe(serial->dev, endpoint) | dir,
-      buf, len, callback, ctx);
-//+add by airm2m for Air72x
-if(dir == USB_DIR_OUT)
-{
-        struct usb_device_descriptor *desc = &serial->dev->descriptor;
-        if(desc->idVendor == cpu_to_le16(0x1286) && desc->idProduct == cpu_to_le16(0x4e3d))
-        {
-            urb->transfer_flags |= URB_ZERO_PACKET;
-        }
-}
-//-add by airm2m for Air72x
-return urb;
-}
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_LICENSE("GPL");
