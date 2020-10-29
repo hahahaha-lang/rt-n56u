@@ -474,29 +474,29 @@ void usb_wwan_close(struct usb_serial_port *port)
 EXPORT_SYMBOL(usb_wwan_close);
 
 /* Helper functions used by usb_wwan_setup_urbs */
-static struct urb *usb_wwan_setup_urb(struct usb_serial *serial, int endpoint,
-				      int dir, void *ctx, char *buf, int len,
-				      void (*callback) (struct urb *))
+static struct urb *usb_wwan_setup_urb(struct usb_serial_port *port,
+                      int endpoint,                                                              
+                      int dir, void *ctx, char *buf, int len,
+                      void (*callback) (struct urb *))
 {
-	struct urb *urb;
-
-	if (endpoint == -1)
-		return NULL;	/* endpoint not needed */
-
-	urb = usb_alloc_urb(0, GFP_KERNEL);	/* No ISO */
-	if (urb == NULL) {
-		dev_dbg(&serial->interface->dev,
-			"%s: alloc for endpoint %d failed.\n", __func__,
-			endpoint);
-		return NULL;
-	}
-
-	/* Fill URB using supplied data. */
-	usb_fill_bulk_urb(urb, serial->dev,
-			  usb_sndbulkpipe(serial->dev, endpoint) | dir,
-			  buf, len, callback, ctx);
-
-	return urb;
+    struct usb_serial *serial = port->serial;
+    struct urb *urb;
+    urb = usb_alloc_urb(0, GFP_KERNEL); /* No ISO */
+    if (!urb)
+        return NULL;
+    usb_fill_bulk_urb(urb, serial->dev,
+              usb_sndbulkpipe(serial->dev, endpoint) | dir,
+              buf, len, callback, ctx);
+    //+add by airm2m for Air72x
+    if(dir == USB_DIR_OUT){
+        struct usb_device_descriptor *desc = &serial->dev->descriptor;
+        if(desc->idVendor == cpu_to_le16(0x1286) && desc->idProduct == cpu_to_le16(0x4e3d))
+        {
+            urb->transfer_flags |= URB_ZERO_PACKET;
+        }
+    }
+    //-add by airm2m for Air72x
+    return urb;
 }
 
 /* Setup urbs */
